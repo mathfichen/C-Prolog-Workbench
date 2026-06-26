@@ -1,0 +1,38 @@
+name: Validate & Dry-run build
+
+on:
+  pull_request:
+    paths:
+      - "raw_materials/**"
+      - "metadata/releases.yaml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools p7zip-full ncompress python3-yaml
+
+      - name: Validate manifest & compute checksums
+        run: |
+          python3 scripts/update_metadata.py
+
+      - name: Dry-run: build flattened trees
+        run: |
+          python3 scripts/build_source_tree.py --clean
+
+      - name: Upload preview artifact (source_code/)
+        uses: actions/upload-artifact@v4
+        with:
+          name: source_code-dryrun
+          path: source_code/

@@ -1,0 +1,28 @@
+name: Regenerate SourceCode branch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-sourcecode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools p7zip-full ncompress python3-yaml
+
+      - name: Build flattened trees (idempotent)
+        run: |
+          python3 scripts/build_source_tree.py --clean
+
+      - name: Rebuild synthetic history on SourceCode
+        run: |
+          python3 scripts/make_synthetic_history.py --force

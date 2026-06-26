@@ -1,0 +1,58 @@
+name: Curate PR (maintainer)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to curate"
+        required: true
+        type: number
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  curate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools p7zip-full ncompress python3-yaml
+
+      - name: Fetch PR head into local ref
+        env:
+          PR: ${{ inputs.pr_number }}
+        run: |
+          git fetch origin "pull/$PR/head:refs/remotes/origin/pr/$PR"
+          git checkout -B "curation/pr-$PR" "refs/remotes/origin/pr/$PR"
+
+      - name: Build source tree & update metadata
+        run: |
+          python3 scripts/build_source_tree.py --clean
+          python3 scripts/update_metadata.py
+
+      - name: Commit curated changes
+        run: |
+          git config user.name  "SWH Curator Bot"
+          git config user.email "bot@softwareheritage.org"
+          git add -A
+          git commit -m "Curate PR #${{ inputs.pr_number }}: update metadata & build artifacts" || echo "nothing to commit"
+          git push -u origin "curation/pr-${{ inputs.pr_number }}"
+
+      - name: Open or update curation PR to main
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "Curation PR for #${{ inputs.pr_number }}"
+          branch: "curation/pr-${{ inputs.pr_number }}"
+          base: "main"
+          commit-message: "Curated outputs for PR #${{ inputs.pr_number }}"
+          body: |
+            This PR contains curated outputs from PR #${{ inputs.pr_number }}.
+            After review/merge, run **Regenerate SourceCode** to update the synthetic history.

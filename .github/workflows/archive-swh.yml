@@ -1,0 +1,26 @@
+name: Archive on Software Heritage
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Origin URL to save (default: this repo)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  swh-save:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save Code Now
+        env:
+          URL: ${{ inputs.target_url || format('https://github.com/{0}', github.repository) }}
+          SWH_TOKEN: ${{ secrets.SWH_PERSONAL_TOKEN }}
+        run: |
+          curl -sS -X POST "https://archive.softwareheritage.org/api/1/save/" \
+            -H "Authorization: Bearer ${SWH_TOKEN}" \
+            -F "url=${URL}"
+          echo "Requested archive for ${URL}"

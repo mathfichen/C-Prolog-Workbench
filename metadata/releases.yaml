@@ -1,0 +1,10 @@
+# Canonical manifest — the order of this list is the commit order on SourceCode
+releases:
+  - id: "life_090"
+    title: "Wild_Life 0.90"
+    date: "1991-05-12"
+    author: "Jane Doe <jane@example.org>"
+    message: "Initial public release 0.90"
+    sources:
+      - path: "raw_materials/life_090/life_090.tar.Z"
+        strip_components: "auto"
